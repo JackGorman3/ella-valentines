@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>For You 💌</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Libre+Baskerville:ital@0;1&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --cream:#fdf6ee;
+  --rose:#c0485a;
+  --blush:#e8a0aa;
+  --dusty:#8a4a52;
+  --ink:#2c1a1a;
+  --gold:#c9965a;
+  --card:#fff9f4;
+}
+html{scroll-behavior:smooth}
+body{background:var(--cream);color:var(--ink);font-family:'Libre Baskerville',serif;overflow-x:hidden}
+
+/* ─── PUZZLE PAGE ─── */
+#puzzle-page{
+  position:fixed;inset:0;z-index:100;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background:radial-gradient(ellipse at 50% 30%, #f9e0e5 0%, #fdf0e8 60%, var(--cream) 100%);
+  padding:1.5rem;
+  transition:opacity 0.8s ease, transform 0.8s ease;
+}
+#puzzle-page.hide{opacity:0;transform:scale(1.04);pointer-events:none}
+
+.puzzle-eyebrow{
+  font-family:'Cormorant Garamond',serif;
+  font-size:0.78rem;letter-spacing:0.35em;text-transform:uppercase;
+  color:var(--gold);margin-bottom:0.6rem;text-align:center;
+}
+.puzzle-title{
+  font-family:'Cormorant Garamond',serif;
+  font-style:italic;font-weight:300;
+  font-size:clamp(1.8rem,5vw,2.8rem);
+  color:var(--rose);text-align:center;margin-bottom:0.4rem;
+}
+.puzzle-hint{
+  font-size:0.78rem;color:var(--dusty);text-align:center;
+  font-style:italic;margin-bottom:1.6rem;letter-spacing:0.04em;
+}
+
+.puzzle-wrap{position:relative;display:inline-block}
+#puzzle-board{
+  display:grid;
+  gap:3px;
+  background:#c0485a44;
+  border:3px solid #c0485a55;
+  border-radius:4px;
+  padding:3px;
+  box-shadow:0 12px 40px #c0485a28, 0 2px 10px #00000015;
+}
+.tile{
+  overflow:hidden;
+  cursor:pointer;
+  border-radius:2px;
+  transition:box-shadow 0.15s, transform 0.12s;
+  background:#f5d8db;
+  user-select:none;-webkit-user-select:none;
+  touch-action:manipulation;
+}
+.tile:not(.empty):hover{transform:scale(1.04);box-shadow:0 4px 14px #00000025;z-index:5;}
+.tile.empty{
+  background:transparent !important;
+  cursor:default;
+  box-shadow:inset 0 0 0 2px #c0485a33;
+}
+.tile.correct{box-shadow:inset 0 0 0 2.5px var(--gold);}
+
+.puzzle-stats{
+  display:flex;gap:2rem;margin-top:1rem;align-items:center;justify-content:center;
+}
+.stat{text-align:center}
+.stat-val{font-family:'Cormorant Garamond',serif;font-size:1.6rem;color:var(--rose);font-weight:600;display:block;}
+.stat-lbl{font-size:0.68rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--dusty);}
+
+.btn-shuffle{
+  margin-top:1.2rem;
+  font-family:'Cormorant Garamond',serif;font-style:italic;
+  font-size:0.95rem;background:none;border:1px solid var(--blush);
+  color:var(--dusty);padding:0.45rem 1.4rem;border-radius:100px;
+  cursor:pointer;transition:background 0.2s,color 0.2s;letter-spacing:0.04em;
+}
+.btn-shuffle:hover{background:var(--rose);color:#fff;border-color:var(--rose);}
+
+.preview-btn{
+  font-size:0.72rem;letter-spacing:0.12em;text-transform:uppercase;
+  background:none;border:none;color:var(--blush);cursor:pointer;
+  text-decoration:underline;text-underline-offset:3px;
+}
+
+.preview-overlay{
+  position:absolute;inset:3px;
+  border-radius:2px;overflow:hidden;
+  opacity:0;pointer-events:none;
+  transition:opacity 0.25s;
+  z-index:10;
+}
+.preview-overlay.show{opacity:1;}
+.preview-overlay img{width:100%;height:100%;object-fit:cover;display:block;}
+.preview-label{
+  position:absolute;bottom:0;left:0;right:0;
+  background:#00000066;color:#fff;
+  font-size:0.7rem;text-align:center;padding:0.3rem;
+  font-style:italic;letter-spacing:0.05em;
+}
+
+/* ─── WIN POPUP ─── */
+#win-popup{
+  position:fixed;inset:0;z-index:200;
+  display:flex;align-items:center;justify-content:center;
+  background:#00000060;backdrop-filter:blur(6px);
+  opacity:0;pointer-events:none;
+  transition:opacity 0.5s;
+}
+#win-popup.show{opacity:1;pointer-events:all;}
+.win-card{
+  background:var(--card);border:1px solid #e8d5c8;border-radius:4px;
+  padding:3rem 3.5rem;text-align:center;max-width:420px;width:90%;
+  box-shadow:0 20px 60px #c0485a30;
+  transform:scale(0.85);transition:transform 0.5s cubic-bezier(.4,0,.2,1);
+  position:relative;overflow:hidden;
+}
+#win-popup.show .win-card{transform:scale(1);}
+.win-hearts{font-size:2.5rem;animation:pulse 1.5s ease-in-out infinite;margin-bottom:1rem;display:block;}
+.win-title{
+  font-family:'Cormorant Garamond',serif;
+  font-style:italic;font-size:2.6rem;color:var(--rose);line-height:1.1;margin-bottom:0.75rem;
+}
+.win-sub{font-size:0.92rem;color:var(--dusty);line-height:1.7;margin-bottom:1.8rem;}
+.win-btn{
+  font-family:'Cormorant Garamond',serif;font-style:italic;
+  font-size:1.1rem;background:var(--rose);color:#fff;
+  border:none;padding:0.75rem 2.5rem;border-radius:100px;
+  cursor:pointer;letter-spacing:0.04em;
+  box-shadow:0 4px 18px #c0485a40;
+  transition:transform 0.2s, box-shadow 0.2s;
+}
+.win-btn:hover{transform:translateY(-2px);box-shadow:0 8px 24px #c0485a55;}
+
+.confetti-piece{
+  position:absolute;width:7px;height:7px;border-radius:1px;
+  animation:confettiFall 1.3s ease-out forwards;pointer-events:none;
+}
+@keyframes confettiFall{
+  0%{transform:translateY(0) rotate(0deg);opacity:1;}
+  100%{transform:translateY(150px) rotate(540deg) translateX(var(--cx,0px));opacity:0;}
+}
+@keyframes pulse{0%,100%{transform:scale(1);}50%{transform:scale(1.12);}}
+
+/* ─── MAIN SITE ─── */
+#main-site{opacity:0;transform:translateY(30px);transition:opacity 1s 0.3s, transform 1s 0.3s;}
+#main-site.reveal{opacity:1;transform:translateY(0);}
+
+.petals-container{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;}
+.petal{
+  position:absolute;top:-40px;
+  background:radial-gradient(ellipse at 40% 30%, #f5c6cc, #c0485a88);
+  border-radius:150% 0 150% 0;
+  opacity:0;animation:petalFall linear infinite;
+}
+@keyframes petalFall{
+  0%{opacity:0;transform:translateY(-40px) rotate(0deg);}
+  5%{opacity:0.7;}90%{opacity:0.5;}
+  100%{opacity:0;transform:translateY(110vh) rotate(360deg) translateX(50px);}
+}
+
+.hero{
+  position:relative;z-index:1;min-height:100vh;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;padding:2rem;
+  background:radial-gradient(ellipse at 50% 0%, #f9dede44 0%, transparent 70%);
+}
+.heart-icon{font-size:3.5rem;animation:pulse 2s ease-in-out infinite;display:block;margin-bottom:1.5rem;}
+.hero-sub{
+  font-family:'Cormorant Garamond',serif;
+  font-size:clamp(0.8rem,2vw,0.95rem);letter-spacing:0.35em;text-transform:uppercase;
+  color:var(--gold);margin-bottom:1rem;
+  opacity:0;animation:fadeUp 1s 0.3s forwards;
+}
+.hero-title{
+  font-family:'Cormorant Garamond',serif;font-weight:300;font-style:italic;
+  font-size:clamp(3rem,10vw,6.5rem);line-height:1.05;color:var(--rose);
+  opacity:0;animation:fadeUp 1s 0.6s forwards;
+}
+.hero-name{
+  font-family:'Cormorant Garamond',serif;
+  font-size:clamp(1.1rem,3.5vw,1.8rem);color:var(--dusty);margin-top:1rem;
+  opacity:0;animation:fadeUp 1s 0.9s forwards;
+}
+.scroll-hint{
+  position:absolute;bottom:2.5rem;
+  font-size:0.72rem;letter-spacing:0.2em;color:var(--blush);text-transform:uppercase;
+  opacity:0;animation:fadeUp 1s 1.8s forwards;
+}
+.scroll-hint::after{
+  content:'';display:block;margin:0.5rem auto 0;
+  width:1px;height:40px;background:linear-gradient(to bottom, var(--blush), transparent);
+}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+
+.divider{position:relative;z-index:1;text-align:center;padding:0.75rem 0;}
+.divider span{font-size:1.3rem;color:var(--blush);letter-spacing:0.5rem;}
+
+.letter-section{position:relative;z-index:1;max-width:680px;margin:0 auto;padding:4rem 2rem 5rem;}
+.section-label{
+  font-family:'Cormorant Garamond',serif;
+  font-size:0.78rem;letter-spacing:0.3em;text-transform:uppercase;
+  color:var(--gold);margin-bottom:2.5rem;text-align:center;
+}
+.letter-card{
+  background:var(--card);border:1px solid #e8d5c8;border-radius:2px;
+  padding:3.5rem 3rem;
+  box-shadow:0 8px 40px #c0485a18, 0 2px 8px #0000000a;position:relative;
+}
+.letter-card::before{
+  content:'"';font-family:'Cormorant Garamond',serif;
+  font-size:9rem;line-height:1;color:var(--blush);opacity:0.22;
+  position:absolute;top:0.5rem;left:1.2rem;pointer-events:none;
+}
+.letter-salutation{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:1.5rem;color:var(--rose);margin-bottom:1.5rem;}
+.letter-body{font-size:1rem;line-height:1.95;color:#3d2020;}
+.letter-body p+p{margin-top:1.2em;}
+.letter-sign{margin-top:2.5rem;font-family:'Cormorant Garamond',serif;font-style:italic;font-size:1.3rem;color:var(--dusty);text-align:right;}
+
+.photos-section{position:relative;z-index:1;padding:4rem 2rem 5rem;max-width:960px;margin:0 auto;}
+.photo-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:1.5rem;}
+.photo-card{
+  position:relative;background:var(--card);
+  border:1px solid #e8d5c8;padding:0.75rem 0.75rem 3rem;
+  box-shadow:4px 6px 18px #0000001a;
+  transition:transform 0.3s ease, box-shadow 0.3s ease;
+  transform:rotate(var(--tilt,0deg));
+}
+.photo-card:nth-child(1){--tilt:-1.5deg;}
+.photo-card:nth-child(2){--tilt:1.2deg;}
+.photo-card:nth-child(3){--tilt:-0.8deg;}
+.photo-card:hover{transform:rotate(0deg) scale(1.03);box-shadow:6px 10px 30px #c0485a22;z-index:2;}
+.photo-img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block;}
+.photo-placeholder{
+  width:100%;aspect-ratio:4/3;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  background:linear-gradient(135deg,#fce8e8,#f5d0d0);
+  color:var(--dusty);gap:0.4rem;
+}
+.ph-icon{font-size:2.5rem;}.ph-text{font-size:0.78rem;font-style:italic;}
+.photo-caption{font-family:'Cormorant Garamond',serif;font-style:italic;text-align:center;margin-top:0.9rem;font-size:0.95rem;color:var(--dusty);}
+
+.footer{position:relative;z-index:1;text-align:center;padding:3rem 2rem 4rem;}
+.footer-heart{font-size:2rem;animation:pulse 2s ease-in-out infinite;}
+.footer-text{font-family:'Cormorant Garamond',serif;font-style:italic;color:var(--dusty);margin-top:0.75rem;font-size:1rem;}
+</style>
+</head>
+<body>
+
+<!-- ═══════ PUZZLE PAGE ═══════ -->
+<div id="puzzle-page">
+  <p class="puzzle-eyebrow">A little challenge for you 💌</p>
+  <h1 class="puzzle-title">Put us back together</h1>
+  <p class="puzzle-hint">Slide the pieces into place to unlock your surprise…</p>
+
+  <div class="puzzle-wrap">
+    <div id="puzzle-board"></div>
+    <div class="preview-overlay" id="preview-overlay">
+      <div class="preview-label">Here's what it should look like ♥</div>
+    </div>
+  </div>
+
+  <div class="puzzle-stats">
+    <div class="stat">
+      <span class="stat-val" id="move-count">0</span>
+      <span class="stat-lbl">Moves</span>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:1rem;align-items:center;flex-wrap:wrap;justify-content:center;margin-top:0.8rem;">
+    <button class="btn-shuffle" id="shuffle-btn">Shuffle again</button>
+    <button class="preview-btn" id="preview-btn">Hold to peek 👀</button>
+  </div>
+</div>
+
+<!-- ═══════ WIN POPUP ═══════ -->
+<div id="win-popup">
+  <div class="win-card" id="win-card">
+    <span class="win-hearts">♥ ♥ ♥</span>
+    <h2 class="win-title">You complete us.</h2>
+    <p class="win-sub">Just like these pieces, every part of my life is better with you in it.<br/><br/>Surprise!♥</p>
+    <button class="win-btn" id="win-close-btn">Open! →</button>
+  </div>
+</div>
+
+<!-- ═══════ MAIN SITE ═══════ -->
+<div id="main-site">
+  <div class="petals-container" id="petals"></div>
+
+  <section class="hero">
+    <span class="heart-icon">♥</span>
+    <p class="hero-sub">Valentine's Day · 2026</p>
+    <h1 class="hero-title">For You,<br/>My Sweets</h1>
+    <p class="hero-name">— ELLA —</p>
+    <p class="scroll-hint">Scroll</p>
+  </section>
+
+  <div class="divider"><span>✦ &nbsp; ✦ &nbsp; ✦</span></div>
+
+  <section class="letter-section">
+    <div class="letter-card">
+      <p class="letter-salutation">Smelly,</p>
+      <div class="letter-body">
+        <p>Happy Valentines day! I had such a ball last week when you came to visit me for my birthday- you really do know how to make me feel special. Even though we celebrated big v-day last week I still wanted to do something special on the day.</p>
+        <p>I am so glad I get to have you in my life and for how much better you make it. You're my lover, friend, and rage bait victim, and I wouldn't want it any other way.</p>
+        <p>I hope we don't get in the habbit of not being together on valentine's days for the future!</p>
+      </div>
+      <p class="letter-sign">Love,<br/>Jark ♥</p>
+    </div>
+  </section>
+
+  <div class="divider"><span>✦ &nbsp; ✦ &nbsp; ✦</span></div>
+
+  <section class="photos-section">
+    <p class="section-label">Some of my favorite moments!</p>
+    <div class="photo-grid">
+      <div class="photo-card">
+        <img class="photo-img" src="photo1.png" alt="Us"/>
+        <p class="photo-caption">Hands Up!</p>
+      </div>
+      <div class="photo-card">
+        <img class="photo-img" src="photo2.jpg" alt="Us"/>
+        <p class="photo-caption">Dont Blink!</p>
+      </div>
+      <div class="photo-card">
+        <!-- <img class="photo-img" src="photo3.jpg" alt="Us"/> -->
+        <div class="photo-placeholder"><span class="ph-icon">📷</span><span class="ph-text">Add your photo here</span></div>
+        <p class="photo-caption">Race Ya!</p>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="footer-heart">♥</div>
+    <p class="footer-text">LOVE YA!</p>
+  </footer>
+</div>
+
+<script>
+// ─────────────────────────────────────────────────
+//  CONFIG  ← edit these three things
+// ─────────────────────────────────────────────────
+const IMAGE_URL = 'puzzle-converted.png'; // path/URL to the puzzle photo
+const COLS = 3;
+const ROWS = 3;
+// ─────────────────────────────────────────────────
+
+const TOTAL = COLS * ROWS;
+const TILE_PX = Math.min(Math.floor((Math.min(window.innerWidth, 520) - 50) / COLS), 148);
+
+let grid = [];       // grid[i] = correctTileIndex that lives there (-1 = empty)
+let emptyPos = TOTAL - 1;
+let moves = 0;
+let solved = false;
+
+const boardEl     = document.getElementById('puzzle-board');
+const moveCountEl = document.getElementById('move-count');
+
+/* ── build board DOM ── */
+function buildBoard() {
+  boardEl.style.gridTemplateColumns = `repeat(${COLS}, ${TILE_PX}px)`;
+  boardEl.innerHTML = '';
+
+  // Start in solved order
+  grid = Array.from({length: TOTAL}, (_, i) => i);
+  grid[TOTAL - 1] = -1; // empty slot
+  emptyPos = TOTAL - 1;
+
+  for (let i = 0; i < TOTAL; i++) {
+    const el = document.createElement('div');
+    el.className = 'tile';
+    el.style.width  = TILE_PX + 'px';
+    el.style.height = TILE_PX + 'px';
+    setTileBg(el, i === TOTAL - 1 ? -1 : i);
+    el.addEventListener('click',     () => tryMove(i));
+    el.addEventListener('touchend',  (e) => { e.preventDefault(); tryMove(i); }, {passive: false});
+    boardEl.appendChild(el);
+  }
+
+  // Inject preview image
+  const prev = document.getElementById('preview-overlay');
+  prev.innerHTML = `<img src="${IMAGE_URL}" alt="preview"/><div class="preview-label">Here's what it should look like ♥</div>`;
+
+  shuffle();
+}
+
+/* ── set background for a tile element based on its correct tile index ── */
+function setTileBg(el, tileIdx) {
+  if (tileIdx === -1) {
+    el.style.backgroundImage = '';
+    el.classList.add('empty');
+    el.classList.remove('correct');
+    return;
+  }
+  el.classList.remove('empty');
+  const col = tileIdx % COLS;
+  const row = Math.floor(tileIdx / COLS);
+  el.style.backgroundImage    = `url('${IMAGE_URL}')`;
+  el.style.backgroundSize     = `${COLS * 100}% ${ROWS * 100}%`;
+  el.style.backgroundPosition = `${(COLS === 1 ? 0 : col / (COLS - 1)) * 100}% ${(ROWS === 1 ? 0 : row / (ROWS - 1)) * 100}%`;
+}
+
+/* ── refresh the visual state of all tiles ── */
+function renderBoard() {
+  const els = Array.from(boardEl.children);
+  els.forEach((el, pos) => {
+    const tileIdx = grid[pos];
+    setTileBg(el, tileIdx);
+    // highlight if correctly placed
+    if (tileIdx !== -1 && tileIdx === pos) {
+      el.classList.add('correct');
+    } else {
+      el.classList.remove('correct');
+    }
+  });
+}
+
+/* ── get valid neighbour positions of the empty slot ── */
+function neighbours(pos) {
+  const row = Math.floor(pos / COLS), col = pos % COLS;
+  const n = [];
+  if (row > 0)        n.push(pos - COLS);
+  if (row < ROWS - 1) n.push(pos + COLS);
+  if (col > 0)        n.push(pos - 1);
+  if (col < COLS - 1) n.push(pos + 1);
+  return n;
+}
+
+/* ── try to slide tile at clicked position into empty slot ── */
+function tryMove(clickedPos) {
+  if (solved) return;
+  if (!neighbours(emptyPos).includes(clickedPos)) return;
+
+  // swap
+  grid[emptyPos] = grid[clickedPos];
+  grid[clickedPos] = -1;
+  emptyPos = clickedPos;
+
+  moves++;
+  moveCountEl.textContent = moves;
+  renderBoard();
+  checkWin();
+}
+
+/* ── shuffle via random valid moves ── */
+function shuffle() {
+  solved = false;
+  moves  = 0;
+  moveCountEl.textContent = 0;
+
+  // reset to solved
+  grid = Array.from({length: TOTAL}, (_, i) => i);
+  grid[TOTAL - 1] = -1;
+  emptyPos = TOTAL - 1;
+
+  let lastEmpty = -1;
+  for (let k = 0; k < 5; k++) {
+    const ns = neighbours(emptyPos).filter(p => p !== lastEmpty);
+    const pick = ns[Math.floor(Math.random() * ns.length)];
+    lastEmpty = emptyPos;
+    grid[emptyPos] = grid[pick];
+    grid[pick] = -1;
+    emptyPos = pick;
+  }
+  renderBoard();
+}
+
+/* ── check win condition ── */
+function checkWin() {
+  const allCorrect = grid.every((tileIdx, pos) =>
+    pos === TOTAL - 1 ? tileIdx === -1 : tileIdx === pos
+  );
+  if (allCorrect && !solved) {
+    solved = true;
+    setTimeout(showWin, 350);
+  }
+}
+
+/* ── show win popup ── */
+function showWin() {
+  const popup = document.getElementById('win-popup');
+  popup.classList.add('show');
+  spawnConfetti();
+}
+
+function spawnConfetti() {
+  const card   = document.getElementById('win-card');
+  const colors = ['#c0485a','#e8a0aa','#c9965a','#fff0f2','#f9c6cc','#a33'];
+  for (let i = 0; i < 45; i++) {
+    const c = document.createElement('div');
+    c.className = 'confetti-piece';
+    c.style.cssText = `
+      left:${Math.random() * 100}%;
+      top:${10 + Math.random() * 50}%;
+      background:${colors[Math.floor(Math.random() * colors.length)]};
+      animation-delay:${Math.random() * 0.4}s;
+      --cx:${(Math.random() - 0.5) * 170}px;
+      transform:rotate(${Math.random() * 360}deg);
+    `;
+    card.appendChild(c);
+    setTimeout(() => c.remove(), 1800);
+  }
+}
+
+/* ── close popup & reveal site ── */
+document.getElementById('win-close-btn').addEventListener('click', () => {
+  document.getElementById('win-popup').classList.remove('show');
+  document.getElementById('puzzle-page').classList.add('hide');
+  const site = document.getElementById('main-site');
+  site.classList.add('reveal');
+  spawnPetals();
+  setTimeout(() => {
+    document.getElementById('puzzle-page').style.display = 'none';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, 900);
+});
+
+/* ── shuffle button ── */
+document.getElementById('shuffle-btn').addEventListener('click', shuffle);
+
+/* ── peek button ── */
+const peekBtn     = document.getElementById('preview-btn');
+const peekOverlay = document.getElementById('preview-overlay');
+peekBtn.addEventListener('mousedown',  () => peekOverlay.classList.add('show'));
+peekBtn.addEventListener('mouseup',    () => peekOverlay.classList.remove('show'));
+peekBtn.addEventListener('mouseleave', () => peekOverlay.classList.remove('show'));
+peekBtn.addEventListener('touchstart', (e) => { e.preventDefault(); peekOverlay.classList.add('show'); }, {passive:false});
+peekBtn.addEventListener('touchend',   () => peekOverlay.classList.remove('show'));
+
+/* ── falling petals for main site ── */
+function spawnPetals() {
+  const container = document.getElementById('petals');
+  for (let i = 0; i < 22; i++) {
+    const p = document.createElement('div');
+    p.className = 'petal';
+    const size = 8 + Math.random() * 10;
+    p.style.cssText = `
+      left:${Math.random() * 100}%;
+      animation-duration:${8 + Math.random() * 10}s;
+      animation-delay:${Math.random() * 14}s;
+      width:${size}px; height:${size * 1.3}px;
+      transform:rotate(${Math.random() * 360}deg);
+    `;
+    container.appendChild(p);
+  }
+}
+
+/* ── init ── */
+buildBoard();
+</script>
+</body>
+</html>
